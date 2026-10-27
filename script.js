@@ -218,11 +218,59 @@ document.getElementById('octave-up').addEventListener('click', () => changeOctav
 // Format : touches séparées par des espaces, "[XC]" = touches simultanées,
 // "." = pause, retour à la ligne = nouvelle ligne. "ZXC" sans crochets = Z puis X puis C.
 
-const EXAMPLE_CHARTS = {
-  'Au clair de la lune': 'A A A Z E . Z .\nA E Z Z A',
-  'Ode à la joie': 'E E R T T R E Z\nA A Z E E . Z Z .\nE E R T T R E Z\nA A Z E Z . A A',
-  'Accords (exemple)': '[WA] E T [WA] E T\n[VR] Y I [VR] Y I\n[BT] U O [BT] U O\n[WAI]',
-};
+// Rappel des touches : W=Do3 X=Ré3 C=Mi3 V=Fa3 B=Sol3 N=La3 ,=Si3
+// A=Do4 Z=Ré4 E=Mi4 R=Fa4 T=Sol4 Y=La4 U=Si4 I=Do5 O=Ré5 P=Mi5 ^=Fa5 $=Sol5
+// Noires : S D G H J (octave 3), é " ( - è (octave 4), ç à = (octave 5).
+// Les morceaux trop aigus sont transposés pour tenir sur le clavier.
+const EXAMPLE_CHARTS = [
+  { group: 'Classique & comptines', name: 'Au clair de la lune', tempo: 120,
+    chart: 'A A A Z E . Z .\nA E Z Z A' },
+  { group: 'Classique & comptines', name: 'Ah ! vous dirai-je, maman', tempo: 130,
+    chart: 'A A T T Y Y T .\nR R E E Z Z A .\nT T R R E E Z .\nT T R R E E Z .\nA A T T Y Y T .\nR R E E Z Z A' },
+  { group: 'Classique & comptines', name: 'Frère Jacques', tempo: 140,
+    chart: 'A Z E A A Z E A\nE R T . E R T .\nT Y T R E A T Y T R E A\nA B A . A B A' },
+  { group: 'Classique & comptines', name: 'Joyeux anniversaire', tempo: 130,
+    chart: 'T T Y T I U .\nT T Y T O I .\nT T $ P I U Y .\n^ ^ P I O I' },
+  { group: 'Classique & comptines', name: 'Jingle Bells', tempo: 180,
+    chart: 'E E E . E E E .\nE T A Z E . . .\nR R R R R E E E\nE Z Z E Z . T .' },
+  { group: 'Classique & comptines', name: 'Ode à la joie (Beethoven)', tempo: 130,
+    chart: 'E E R T T R E Z\nA A Z E E . Z Z .\nE E R T T R E Z\nA A Z E Z . A A' },
+  { group: 'Classique & comptines', name: 'Lettre à Élise (Beethoven)', tempo: 150,
+    chart: 'P à P à P U O I [NY] .\nA E Y [,U] .\nE - U [AI] .\nE P à P à P U O I [NY] .\nA E Y [,U] .\nE I U [NY]' },
+  { group: 'Classique & comptines', name: 'Canon en ré (Pachelbel)', tempo: 70,
+    chart: '[X=] [NP] [,O] [Gç]\n[BU] [XY] [BU] [Nç]' },
+
+  { group: 'Films & séries', name: 'Pirates des Caraïbes', tempo: 180,
+    chart: 'N A Z Z . Z E R R .\nR T E E . Z A A Z .\nN A Z Z . Z E R R .\nR T E E . Z A Z' },
+  { group: 'Films & séries', name: 'Game of Thrones', tempo: 170,
+    chart: 'T A " R T A " R\nT A E R T A E R\nT . A . " R T . A . " R Z' },
+  { group: 'Films & séries', name: 'Harry Potter (Hedwige)', tempo: 140,
+    chart: ', E T ( E . U Y . .\n( . . E T ( " . R ,' },
+  { group: 'Films & séries', name: 'Star Wars', tempo: 130,
+    chart: 'B B B A . T .\nR E Z I . T .\nR E Z I . T .\nR E R Z' },
+  { group: 'Films & séries', name: 'La Panthère rose', tempo: 150,
+    chart: '" E . ( T .\n" E ( T I U E T U è .\nY T E Z E' },
+  { group: 'Films & séries', name: 'Seven Nation Army (riff)', tempo: 140,
+    chart: 'E . E T E Z A , .\nE . E T E Z A Z A ,' },
+
+  { group: 'Jeux vidéo', name: 'Tetris', tempo: 170,
+    chart: 'E , A Z A , N N A E Z A , . A Z E A N N .\nZ R Y T R E . A E Z A , . , A Z E A N N' },
+  { group: 'Jeux vidéo', name: 'Super Mario Bros', tempo: 200,
+    chart: 'E E . E . A E . T . . . B . . .\nA . B . C . N , J N .\nB E T Y R T . E A Z ,' },
+  { group: 'Jeux vidéo', name: 'Zelda – Berceuse de Zelda', tempo: 90,
+    chart: ', Z N . B N , Z N .\n, Z Y T Z . A , N' },
+  { group: 'Jeux vidéo', name: 'Zelda – Chant des tempêtes', tempo: 170,
+    chart: 'Z R O . Z R O .\nP ^ P ^ P I Y .\nY Z R T Y .\nY Z R T E' },
+  { group: 'Jeux vidéo', name: 'Final Fantasy – Prélude', tempo: 200,
+    chart: 'A Z E T I O P $ P O I T E Z\nN , A E Y U I P I U Y E A ,' },
+  { group: 'Jeux vidéo', name: 'Undertale – Megalovania', tempo: 220,
+    chart: 'Z Z O . Y . - . T . R . Z R T\nA A O . Y . - . T . R . Z R T\n, , O . Y . - . T . R . Z R T\nJ J O . Y . - . T . R . Z R T' },
+  { group: 'Jeux vidéo', name: 'Wii – Chaîne Mii', tempo: 170,
+    chart: '( Y ç . Y . ( Z Z Z . .\né Z ( Y ç . Y . ( P à O' },
+
+  { group: 'Exemples', name: 'Accords (exemple)', tempo: 120,
+    chart: '[WA] E T [WA] E T\n[VR] Y I [VR] Y I\n[BT] U O [BT] U O\n[WAI]' },
+];
 
 const labelToKey = new Map(KEYMAP.map(k => [k.label.toUpperCase(), k]));
 
@@ -356,9 +404,24 @@ function onKeyPressed(code) {
 
 function initCharts() {
   const select = document.getElementById('chart-select');
-  for (const name of Object.keys(EXAMPLE_CHARTS)) select.add(new Option(name, name));
-  select.addEventListener('change', () => { chartInput.value = EXAMPLE_CHARTS[select.value]; renderChart(); });
-  chartInput.value = EXAMPLE_CHARTS[select.value];
+  const groups = new Map();
+  EXAMPLE_CHARTS.forEach((c, i) => {
+    if (!groups.has(c.group)) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = c.group;
+      select.appendChild(optgroup);
+      groups.set(c.group, optgroup);
+    }
+    groups.get(c.group).appendChild(new Option(c.name, i));
+  });
+  const loadExample = () => {
+    const c = EXAMPLE_CHARTS[select.value];
+    chartInput.value = c.chart;
+    document.getElementById('tempo').value = c.tempo;
+    renderChart();
+  };
+  select.addEventListener('change', loadExample);
+  loadExample();
   chartInput.addEventListener('input', renderChart);
   document.getElementById('chart-play').addEventListener('click', e => { e.currentTarget.blur(); playChart(); });
   document.getElementById('chart-practice').addEventListener('click', e => { e.currentTarget.blur(); practiceChart(); });
