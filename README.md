@@ -13,6 +13,25 @@ Un piano jouable dans le navigateur avec un clavier AZERTY.
 | `Espace` (maintenu) | sustain |
 | `←` / `→` | octave −1 / +1 |
 
+## Charts
+
+Sous le piano, l'éditeur de charts permet d'écrire un morceau avec les touches du clavier :
+
+```
+E E R T T R E Z
+[WA] E T [VR] Y I
+```
+
+- touches séparées par des espaces (`ZXC` collé = Z puis X puis C) ;
+- `[XC]` : touches à appuyer en même temps (affichées superposées) ;
+- `.` : pause ;
+- retour à la ligne : nouvelle ligne du chart.
+
+**▶ Écouter** joue le chart au tempo choisi. **🎯 S'entraîner** surligne la prochaine touche
+(sur le chart et sur le piano) et avance quand tu la joues.
+
+Les charts d'exemple sont dans `EXAMPLE_CHARTS`, dans `script.js`.
+
 ## Ajouter ses sons
 
 Dépose les fichiers dans `sounds/`, un fichier par note, nommés ainsi :

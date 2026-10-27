@@ -31,6 +31,23 @@
     <div id="piano" class="piano" aria-label="Clavier de piano"></div>
   </main>
 
+  <section class="charts">
+    <h2>Charts</h2>
+    <p class="hint">Écris les touches séparées par des espaces. Touches simultanées entre crochets : <kbd>[XC]</kbd>.
+      Pause : <kbd>.</kbd> — nouvelle ligne : Entrée.</p>
+    <div class="chart-toolbar">
+      <select id="chart-select"></select>
+      <label>Tempo
+        <input id="tempo" type="number" min="40" max="300" value="120"> BPM
+      </label>
+      <button id="chart-play" type="button">▶ Écouter</button>
+      <button id="chart-practice" type="button">🎯 S'entraîner</button>
+      <button id="chart-stop" type="button">■ Stop</button>
+    </div>
+    <textarea id="chart-input" rows="4" spellcheck="false"></textarea>
+    <div id="chart-view" class="chart-view"></div>
+  </section>
+
   <script src="script.js"></script>
 </body>
 </html>

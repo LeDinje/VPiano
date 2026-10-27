@@ -140,6 +140,7 @@ function press(code) {
   const midi = noteToMidi(key.note) + octaveShift * 12;
   activeVoices.set(code, startVoice(midi));
   document.querySelector(`[data-code="${code}"]`).classList.add('active');
+  onKeyPressed(code);
 }
 
 function release(code) {
@@ -186,8 +187,13 @@ function changeOctave(delta) {
   updateNoteLabels();
 }
 
+// Pas de notes pendant qu'on tape dans un champ (éditeur de chart, tempo...).
+function isTyping(e) {
+  return e.target.matches('textarea, input[type="text"], input[type="number"], select');
+}
+
 document.addEventListener('keydown', e => {
-  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
   if (e.code === 'Space') { e.preventDefault(); setSustain(true); return; }
   if (e.code === 'ArrowLeft') { changeOctave(-1); return; }
   if (e.code === 'ArrowRight') { changeOctave(1); return; }
@@ -208,6 +214,159 @@ document.getElementById('sustain').addEventListener('change', e => setSustain(e.
 document.getElementById('octave-down').addEventListener('click', () => changeOctave(-1));
 document.getElementById('octave-up').addEventListener('click', () => changeOctave(1));
 
+// ---------- Charts ----------
+// Format : touches séparées par des espaces, "[XC]" = touches simultanées,
+// "." = pause, retour à la ligne = nouvelle ligne. "ZXC" sans crochets = Z puis X puis C.
+
+const EXAMPLE_CHARTS = {
+  'Au clair de la lune': 'A A A Z E . Z .\nA E Z Z A',
+  'Ode à la joie': 'E E R T T R E Z\nA A Z E E . Z Z .\nE E R T T R E Z\nA A Z E Z . A A',
+  'Accords (exemple)': '[WA] E T [WA] E T\n[VR] Y I [VR] Y I\n[BT] U O [BT] U O\n[WAI]',
+};
+
+const labelToKey = new Map(KEYMAP.map(k => [k.label.toUpperCase(), k]));
+
+// Renvoie des lignes d'étapes ; une étape = liste de touches (vide = pause).
+function parseChart(text) {
+  return text.split('\n').map(line => {
+    const steps = [];
+    const tokens = line.match(/\[[^\]]*\]|\S/g) || [];
+    for (const token of tokens) {
+      if (token === '.') steps.push({ keys: [], raw: ['.'] });
+      else if (token.startsWith('[')) {
+        const raw = [...token.slice(1, -1)].filter(c => c.trim());
+        steps.push({ keys: raw.map(c => labelToKey.get(c.toUpperCase())).filter(Boolean), raw });
+      } else {
+        const key = labelToKey.get(token.toUpperCase());
+        steps.push({ keys: key ? [key] : [], raw: [token] });
+      }
+    }
+    return steps;
+  }).filter(steps => steps.length);
+}
+
+const chartInput = document.getElementById('chart-input');
+const chartView = document.getElementById('chart-view');
+let chartSteps = []; // toutes les étapes à plat, avec leur élément DOM
+let chartIndex = -1;
+let mode = null; // 'play' | 'practice' | null
+let playTimer = null;
+let pressedForStep = new Set();
+
+function renderChart() {
+  stopChart();
+  chartView.innerHTML = '';
+  chartSteps = [];
+  for (const line of parseChart(chartInput.value)) {
+    const lineEl = document.createElement('div');
+    lineEl.className = 'chart-line';
+    for (const step of line) {
+      const stepEl = document.createElement('div');
+      stepEl.className = 'chart-step';
+      // Note la plus aiguë en haut, comme sur une partition.
+      const pitch = c => { const k = labelToKey.get(c.toUpperCase()); return k ? noteToMidi(k.note) : -1; };
+      const raw = [...step.raw].sort((a, b) => pitch(b) - pitch(a));
+      for (const c of raw) {
+        const key = labelToKey.get(c.toUpperCase());
+        const span = document.createElement('span');
+        span.textContent = key ? key.label : c;
+        span.className = c === '.' ? 'pause' : !key ? 'unknown' : key.note.includes('#') ? 'black' : '';
+        stepEl.appendChild(span);
+      }
+      lineEl.appendChild(stepEl);
+      chartSteps.push({ ...step, el: stepEl });
+    }
+    chartView.appendChild(lineEl);
+  }
+}
+
+function clearTargets() {
+  document.querySelectorAll('.key.target').forEach(el => el.classList.remove('target'));
+}
+
+function goToStep(i) {
+  chartSteps.forEach((s, j) => {
+    s.el.classList.toggle('current', j === i);
+    s.el.classList.toggle('done', j < i);
+  });
+  clearTargets();
+  chartIndex = i;
+  pressedForStep = new Set();
+  const step = chartSteps[i];
+  if (!step) return;
+  step.keys.forEach(k => document.querySelector(`[data-code="${k.code}"]`).classList.add('target'));
+  step.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function stopChart() {
+  clearTimeout(playTimer);
+  mode = null;
+  chartIndex = -1;
+  clearTargets();
+  chartSteps.forEach(s => s.el.classList.remove('current', 'done'));
+}
+
+function playChart() {
+  renderChart();
+  if (!chartSteps.length) return;
+  mode = 'play';
+  const beat = () => 60000 / Number(document.getElementById('tempo').value || 120);
+  const next = i => {
+    if (mode !== 'play') return;
+    if (i >= chartSteps.length) { stopChart(); return; }
+    goToStep(i);
+    const codes = chartSteps[i].keys.map(k => k.code);
+    codes.forEach(press);
+    const duration = beat();
+    setTimeout(() => codes.forEach(release), duration * 0.9);
+    playTimer = setTimeout(() => next(i + 1), duration);
+  };
+  next(0);
+}
+
+function skipPauses(i) {
+  while (chartSteps[i] && !chartSteps[i].keys.length) i++;
+  return i;
+}
+
+function practiceChart() {
+  renderChart();
+  if (!chartSteps.length) return;
+  mode = 'practice';
+  goToStep(skipPauses(0));
+}
+
+// En mode entraînement, on passe à l'étape suivante quand toutes ses touches ont été jouées.
+function onKeyPressed(code) {
+  if (mode !== 'practice') return;
+  const step = chartSteps[chartIndex];
+  if (!step || !step.keys.some(k => k.code === code)) return;
+  pressedForStep.add(code);
+  if (step.keys.every(k => pressedForStep.has(k.code))) {
+    const nextIndex = skipPauses(chartIndex + 1);
+    if (nextIndex >= chartSteps.length) {
+      goToStep(chartSteps.length);
+      mode = null;
+      document.getElementById('status').textContent = 'Bravo, chart terminé !';
+    } else {
+      goToStep(nextIndex);
+    }
+  }
+}
+
+function initCharts() {
+  const select = document.getElementById('chart-select');
+  for (const name of Object.keys(EXAMPLE_CHARTS)) select.add(new Option(name, name));
+  select.addEventListener('change', () => { chartInput.value = EXAMPLE_CHARTS[select.value]; renderChart(); });
+  chartInput.value = EXAMPLE_CHARTS[select.value];
+  chartInput.addEventListener('input', renderChart);
+  document.getElementById('chart-play').addEventListener('click', e => { e.currentTarget.blur(); playChart(); });
+  document.getElementById('chart-practice').addEventListener('click', e => { e.currentTarget.blur(); practiceChart(); });
+  document.getElementById('chart-stop').addEventListener('click', stopChart);
+  renderChart();
+}
+
 masterGain.gain.value = 0.8;
 buildPiano();
+initCharts();
 loadSamples();
