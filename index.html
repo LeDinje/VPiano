@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Piano Virtuel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Piano Virtuel</h1>
+    <p class="hint">Joue avec ton clavier AZERTY : <kbd>W</kbd>…<kbd>,</kbd> et <kbd>A</kbd>…<kbd>$</kbd> pour les touches blanches, la rangée du dessus pour les noires.</p>
+  </header>
+
+  <section class="controls">
+    <label>Volume
+      <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8">
+    </label>
+    <label>Octave
+      <button id="octave-down" type="button">−</button>
+      <span id="octave-value">0</span>
+      <button id="octave-up" type="button">+</button>
+    </label>
+    <label class="sustain">
+      <input id="sustain" type="checkbox"> Sustain (Espace)
+    </label>
+    <span id="status" class="status">Chargement des sons…</span>
+  </section>
+
+  <main>
+    <div id="piano" class="piano" aria-label="Clavier de piano"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
